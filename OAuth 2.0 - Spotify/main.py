@@ -82,10 +82,11 @@ def refresh_token():
 @app.route("/hub")
 def create_hub_page():
     """Create the hub page."""
+    validate_token()
     return ("""<h1><center><a style="text-decoration:none" href='/playlists'>Get users playlist</a><br>
             <a style="text-decoration:none" href='/current_song'>Get users current playing song</a><br>
-            <a style="text-decoration:none" href='/add_current_song_to_playlist'>Add current song to playlist</a><br>
-            <a style="text-decoration:none" href='/test'>Test</a>""")
+            <a style="text-decoration:none" href='/add_current_song'>Add current song to playlist</a><br>
+            <a style="text-decoration:none" href='/add_to_playlist'>Add song to playlist with check</a>""")
 
 
 @app.route("/current_song")
@@ -99,11 +100,10 @@ def get_current_song():
 @app.route("/playlists")
 def get_playlist():
     """Retrieve the user's playlists."""
-    validate_token()
     playlists = simpel_api_call("me/playlists")
     return playlists
 
-@app.route("/add_current_song_to_playlist")
+@app.route("/add_current_song")
 def add_current_song_to_playlist():
     """Add the current playing song to the user's playlists."""
     validate_token()
@@ -119,15 +119,15 @@ def add_current_song_to_playlist():
     requests.post(f"{API_BASE_URL}playlists/{PLAYLIST}/tracks", headers=headers, json=data)
     return redirect("/hub") 
 
-@app.route("/test")
+@app.route("/add_to_playlist")
 def test():
     headers = {"Authorization": f"Bearer {session["access_token"]}"}
-    response = requests.get(f"{API_BASE_URL}playlists/{PLAYLIST}/tracks&?market=NL&fields=items(track(name))", headers=headers)
-    
-    if response.status_code == 200:
-        return response.json()
-    else:
-        return f"Error: {response.status_code} - {response.text}"
+    current_playlist = requests.get(f"{API_BASE_URL}playlists/{PLAYLIST}/tracks?market=NL&fields=items(track(name))", headers=headers).json()
+    current_song_playing = simpel_api_call("me/player/currently-playing?market=NL")
+    list_of_songs = [item["track"]["name"] for item in current_playlist["items"]]
+    if current_song_playing["item"]["name"] in list_of_songs:
+        return "already in playlist"
+    return redirect("/add_current_song")
 
 def validate_token():
     """Validate if the access token is retrieved and valid"""
