@@ -161,7 +161,6 @@ def format_song_info(response):
         return "No song is currently playing."
     
 #def is_current_song_in_playlist():
-  
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", debug=True)
