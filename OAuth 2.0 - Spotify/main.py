@@ -86,7 +86,8 @@ def create_hub_page():
     return ("""<h1><center><a style="text-decoration:none" href='/playlists'>Get users playlist</a><br>
             <a style="text-decoration:none" href='/current_song'>Get users current playing song</a><br>
             <a style="text-decoration:none" href='/add_current_song'>Add current song to playlist</a><br>
-            <a style="text-decoration:none" href='/add_to_playlist'>Add song to playlist with check</a>""")
+            <a style="text-decoration:none" href='/add_to_playlist'>Add song to playlist with check</a><br>
+            <a style="text-decoration:none" href='/test'>Test</a>""")
 
 
 @app.route("/current_song")
@@ -120,7 +121,7 @@ def add_current_song_to_playlist():
     return redirect("/hub") 
 
 @app.route("/add_to_playlist")
-def test():
+def add_to_playlist():
     headers = {"Authorization": f"Bearer {session["access_token"]}"}
     current_playlist = requests.get(f"{API_BASE_URL}playlists/{PLAYLIST}/tracks?market=NL&fields=items(track(name))", headers=headers).json()
     current_song_playing = simpel_api_call("me/player/currently-playing?market=NL")
@@ -128,6 +129,11 @@ def test():
     if current_song_playing["item"]["name"] in list_of_songs:
         return "already in playlist"
     return redirect("/add_current_song")
+
+@app.route("/test")
+def test():
+    test_def()
+    return redirect("/hub")
 
 def validate_token():
     """Validate if the access token is retrieved and valid"""
@@ -145,9 +151,11 @@ def simpel_api_call(endpoint):
 
 def update_session_tokens(token_info):
     """Updates the token if it's expired"""
-    session["access_token"] = token_info['access_token']
-    session["refresh_token"] = token_info.get('refresh_token', session["refresh_token"])
-    session["expires_at"] = datetime.now().timestamp() + token_info['expires_in']
+    session["access_token"] = token_info.get("access_token")
+    session["refresh_token"] = token_info.get("refresh_token")
+    session["expires_in"] = token_info.get("expires_in")
+    session["expires_at"] = datetime.now().timestamp() + session["expires_in"]
+   
 
 def format_song_info(response):
     """Format song information into a readable string."""
@@ -159,6 +167,9 @@ def format_song_info(response):
         return f"{song_id} - {song_name} - {artists_names}"
     else:
         return "No song is currently playing."
+    
+def test_def():
+    print(session)
     
 #def is_current_song_in_playlist():
 
