@@ -108,27 +108,68 @@ def get_playlist():
 def add_current_song_to_playlist():
     """Add the current playing song to the user's playlists."""
     validate_token()
-    response =  simpel_api_call("me/player/currently-playing?market=NL")
+
+    # Get the current song information
+    response = simpel_api_call("me/player/currently-playing?market=NL")
+    if 'item' not in response or 'id' not in response['item']:
+        # Handle error when current song info is not available
+        return "Error: Cannot retrieve current song information."
+
+    # Retrieve the song ID
     session["song_id"] = response["item"]["id"]
+
+    # Prepare headers for the POST request
     headers = {
-        "Authorization": f"Bearer {session["access_token"]}",
+        "Authorization": f"Bearer {session['access_token']}",
         "Content-Type": "application/json"
     }
+
+    # Data to add the song to the playlist
     data = {
-    "uris": [f"spotify:track:{session['song_id']}"] 
+        "uris": [f"spotify:track:{session['song_id']}"]
     }
-    requests.post(f"{API_BASE_URL}playlists/{PLAYLIST}/tracks", headers=headers, json=data)
-    return redirect("/hub") 
+
+    # Attempt to add the song to the playlist
+    add_response = requests.post(f"{API_BASE_URL}playlists/{PLAYLIST}/tracks", headers=headers, json=data)
+
+    # Check if the song was successfully added
+    if add_response.status_code not in [200, 201]:
+        # Handle error when adding song to the playlist fails
+        return f"Error: Failed to add song to playlist. Status code: {add_response.status_code}"
+
+    # Redirect to the hub page after successful addition
+    return redirect("/hub")
 
 @app.route("/add_to_playlist")
 def add_to_playlist():
-    headers = {"Authorization": f"Bearer {session["access_token"]}"}
-    current_playlist = requests.get(f"{API_BASE_URL}playlists/{PLAYLIST}/tracks?market=NL&fields=items(track(name))", headers=headers).json()
-    current_song_playing = simpel_api_call("me/player/currently-playing?market=NL")
+    validate_token()
+
+    # Headers for the GET request
+    headers = {"Authorization": f"Bearer {session['access_token']}"}
+
+    # Attempt to get the current playlist
+    playlist_response = requests.get(f"{API_BASE_URL}playlists/{PLAYLIST}/tracks?market=NL&fields=items(track(name))", headers=headers)
+    if playlist_response.status_code != 200:
+        # Handle error when playlist information can't be retrieved
+        return f"Error: Failed to retrieve playlist information. Status code: {playlist_response.status_code}"
+
+    # Parse playlist response
+    current_playlist = playlist_response.json()
+
+    # Attempt to get the currently playing song
+    current_song_response = simpel_api_call("me/player/currently-playing?market=NL")
+    if 'item' not in current_song_response or 'name' not in current_song_response['item']:
+        # Handle error when current song info is not available
+        return "Error: Cannot retrieve current song information."
+
+    # Check if the current song is already in the playlist
     list_of_songs = [item["track"]["name"] for item in current_playlist["items"]]
-    if current_song_playing["item"]["name"] in list_of_songs:
-        return "already in playlist"
+    if current_song_response["item"]["name"] in list_of_songs:
+        return "Song already in playlist"
+
+    # Redirect to add the current song to the playlist
     return redirect("/add_current_song")
+
 
 @app.route("/test")
 def test():
@@ -141,13 +182,23 @@ def validate_token():
         return redirect("/")
     if datetime.now().timestamp() > session["expires_at"]:
         return redirect("/refresh-token")
-    
+
 def simpel_api_call(endpoint):
-    """Simpel API Call function"""
-    headers = {"Authorization": f"Bearer {session["access_token"]}"}
+    """Simple API Call function"""
+    headers = {"Authorization": f"Bearer {session['access_token']}"}
     response = requests.get(API_BASE_URL + endpoint, headers=headers)
-    resp_json = response.json()
-    return resp_json
+    if response.status_code == 200 and 'application/json' in response.headers.get('Content-Type', ''):
+        return response.json()
+    else:
+        # Handle non-JSON responses or errors here
+        return {"error": "Invalid response", "status_code": response.status_code}
+
+# def simpel_api_call(endpoint):
+#     """Simpel API Call function"""
+#     headers = {"Authorization": f"Bearer {session["access_token"]}"}
+#     response = requests.get(API_BASE_URL + endpoint, headers=headers)
+#     resp_json = response.json()
+#     return resp_json
 
 def update_session_tokens(token_info):
     """Updates the token if it's expired"""
