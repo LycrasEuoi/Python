@@ -1,42 +1,56 @@
-#! python3
+##! python3
 
 import os
 import datetime as dt
 
+# Truncate the filename to a maximum of 60 characters
+def truncateFileName(file):
+    return file[:60] if len(file) > 60 else file
 
-# A function that limits the charsize of a file, foldername is < 60 char's
-def fileNameLimiter(file):
-    if len(file) > 60:
-        return file[:60]
-    return file
-
-# A function that print a formated list of the conents of the specified folder
+# Prints a formatted list of files and their creation dates from the specified folder
 def printDownloadList(downloadList):
+    # Check if the list is empty and provide feedback if no files are found
+    if not downloadList:
+        print("No files found in the specified folder.")
+        return
 
-    downloadList.sort(key=lambda x: x[1]) # Sort list by Date, the second value in the tuple
+    # Sort the list by creation date (second element in tuple)
+    downloadList.sort(key=lambda x: x[1])
 
-    print(f'{"Naam":<60}{"Date":>60}') # Print the header of the list     
-    print('-' * 120)                             
+    # Print table header
+    print(f'{"Naam":<60}{"Date":>30}')
+    print('-' * 100)
 
-    for item in downloadList: # A for-loop that print every item of a folder, is separatedby a newline between every section with the same date(rounded by day)
-        if item[1] != downloadList[downloadList.index(item)-1][1]:
-            print('\n') # Prints a newline for every bundel that's created on the same date
+    # Track the previous date to group files by the same creation day
+    previous_date = None
+
+    # Enumerate through the sorted download list for efficient index access
+    for index, item in enumerate(downloadList):
+        # Print a newline if the current file's date is different from the previous one
+        if item[1] != previous_date:
+            print('\n')
+            previous_date = item[1]
         
-        print(f'[{downloadList.index(item)}] {item[0]:<60}{item[1]:>60}')
-            
+        # Print each file's index, truncated name, and formatted creation date
+        print(f'[{index}] {item[0]:<60}{item[1]:>30}')
 
-downloadFolderPath = r'C:\Users\YClae\Downloads' # Folder of which contents are printed
+# Define the path to the downloads folder
+# `os.path.expanduser` ensures compatibility with different user environments
+DOWNLOAD_FOLDER_PATH = os.path.expanduser(r'C:\Users\YClae\Downloads')
 
-downloadFiles = os.listdir(downloadFolderPath)
+# List all files in the specified downloads folder
+downloadFiles = os.listdir(DOWNLOAD_FOLDER_PATH)
 downloadList = []
 
-# A for loop that creates a list-variable of all the items in a folder
+# Create a list of tuples containing truncated filenames and their formatted creation dates
 for file in downloadFiles: 
-    filePath = os.path.join(downloadFolderPath, file) # Gets folder name
-    shortendFile = fileNameLimiter(file) 
+    filePath = os.path.join(DOWNLOAD_FOLDER_PATH, file)  # Construct full file path
+    shortendFile = truncateFileName(file)  # Truncate the filename if necessary
 
-    tCreationDate = dt.datetime.fromtimestamp(os.path.getctime(filePath)) # gets creation date
-    downloadList.append((shortendFile, tCreationDate.strftime("%a %b %d %Y"))) # Formats creation date
+    # Get the file's creation date and format it as a readable string
+    creation_date = dt.datetime.fromtimestamp(os.path.getctime(filePath))
+    downloadList.append((shortendFile, creation_date.strftime("%a %b %d %Y")))
 
+# Print the formatted list of downloads
 printDownloadList(downloadList)
 
