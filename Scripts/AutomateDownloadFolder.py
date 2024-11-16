@@ -15,7 +15,7 @@ def printDownloadList(downloadList):
         return
 
     # Sort the list by creation date (second element in tuple)
-    downloadList.sort(key=lambda x: x[1])
+    downloadList.sort(reverse=True, key=lambda x: x[2])
 
     # Print table header
     print(f'{"Naam":<60}{"Date":>30}')
@@ -48,8 +48,9 @@ for file in downloadFiles:
     shortendFile = truncateFileName(file)  # Truncate the filename if necessary
 
     # Get the file's creation date and format it as a readable string
-    creation_date = dt.datetime.fromtimestamp(os.path.getctime(filePath))
-    downloadList.append((shortendFile, creation_date.strftime("%a %b %d %Y")))
+    creationDate = os.path.getctime(filePath)
+    creationDateReadable = dt.datetime.fromtimestamp(creationDate)
+    downloadList.append((shortendFile, creationDateReadable.strftime("%a %b %d %Y"), creationDate))
 
 # Print the formatted list of downloads
 printDownloadList(downloadList)
