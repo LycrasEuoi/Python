@@ -1,6 +1,7 @@
 #! python3
 
 import os
+import math
 import datetime as dt
 
 # Constant for the maximum length of file names
@@ -11,7 +12,7 @@ def truncateFileName(file, max_length=MAX_FILENAME_LENGTH):
     if not file:
         return "Unnamed File"  # Return a default name if the file name is empty
     # Truncate the file name and append "..." if it exceeds the max length
-    return file[:max_length] + "..." if len(file) > max_length else file
+    return file[:max_length - 3] + "..." if len(file) > max_length else file
 
 # Function to print a formatted list of files
 def printListOfFiles(fileList):
@@ -23,8 +24,8 @@ def printListOfFiles(fileList):
     fileList.sort(reverse=True, key=lambda x: x[2])
 
     # Print the header with file name and date
-    print(f'{"Name":<60}{"Date":>60}')
-    print('-' * 90)
+    print(f'{"Name":<{MAX_FILENAME_LENGTH}}{"Date":>{MAX_FILENAME_LENGTH}}')
+    print('-' * (math.ceil(MAX_FILENAME_LENGTH*2.25)))
 
     previous_date = None  # Track when the creation date changes
 
@@ -34,7 +35,7 @@ def printListOfFiles(fileList):
             previous_date = item[1]
 
         # Print the file with the truncated name and creation date
-        print(f'[{index}] {item[0]:<60}{item[1]:>60}')
+        print(f'[{index}] {item[0]:<{MAX_FILENAME_LENGTH}}{item[1]:>{MAX_FILENAME_LENGTH}}')
 
 # Function to retrieve a list of files and their metadata
 def getListOfFiles(folderPath):
